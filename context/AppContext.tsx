@@ -1,10 +1,24 @@
-
 import React, { createContext, useState, ReactNode, useCallback, useMemo, useEffect } from 'react';
-import { User, UserRole, InspectionReport, ReportStatus, Zone, Location, InspectionForm, Notification, CDR, PenaltyInvoice, PenaltyStatus, GlobalPenaltyStatement } from '../types';
+import {
+  User,
+  UserRole,
+  InspectionReport,
+  ReportStatus,
+  Zone,
+  Location,
+  InspectionForm,
+  Notification,
+  CDR,
+  PenaltyInvoice,
+  PenaltyStatus,
+  GlobalPenaltyStatement,
+  InspectionTask,
+  TaskStatus,
+} from '../types';
 import { USERS, ZONES, LOCATIONS, FORMS, INITIAL_REPORTS, INITIAL_NOTIFICATIONS, INITIAL_CDRS } from '../constants';
 import { db, auth } from '../firebase';
-import { collection, onSnapshot, setDoc, doc, updateDoc, deleteDoc, query, orderBy } from "firebase/firestore";
-import { signInWithEmailAndPassword, signOut, onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
+import { collection, onSnapshot, setDoc, doc } from "firebase/firestore";
+import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
 
 interface AppContextType {
   user: User | null;
@@ -15,6 +29,8 @@ interface AppContextType {
   updateUser: (user: User) => void;
   deleteUser: (userId: string) => void;
   changePassword: (userId: string, oldPassword: string, newPassword: string) => boolean;
+
+  // Reports
   reports: InspectionReport[];
   submitReport: (report: InspectionReport) => void;
   updateReport: (report: InspectionReport) => void;
@@ -23,28 +39,46 @@ interface AppContextType {
   getLocationById: (id: string) => Location | undefined;
   getZoneByLocationId: (locationId: string) => Zone | undefined;
   getFormById: (formId: string) => InspectionForm | undefined;
+
+  // Master data
   zones: Zone[];
   locations: Location[];
   forms: InspectionForm[];
+
+  // Theme
   theme: 'light' | 'dark';
   toggleTheme: () => void;
+
+  // Notifications
   notifications: Notification[];
   markNotificationAsRead: (id: string) => void;
   markAllNotificationsAsRead: () => void;
+
+  // CDR
   cdrs: CDR[];
   addCDR: (cdr: CDR) => void;
   updateCDR: (cdr: CDR) => void;
   getCDRById: (id: string) => CDR | undefined;
+
   // Penalty Invoices
   penaltyInvoices: PenaltyInvoice[];
   addPenaltyInvoice: (invoice: PenaltyInvoice) => void;
   updatePenaltyInvoice: (invoice: PenaltyInvoice) => void;
   getPenaltyInvoiceById: (id: string) => PenaltyInvoice | undefined;
+
   // Global Penalty Statements
   globalPenaltyStatements: GlobalPenaltyStatement[];
   addGlobalPenaltyStatement: (stmt: GlobalPenaltyStatement) => void;
   updateGlobalPenaltyStatement: (stmt: GlobalPenaltyStatement) => void;
   getGlobalPenaltyStatementById: (id: string) => GlobalPenaltyStatement | undefined;
+
+  // Task Management
+  tasks: InspectionTask[];
+  createTask: (taskInput: Omit<InspectionTask, 'id' | 'createdAt'>) => InspectionTask;
+  updateTask: (taskId: string, partial: Partial<InspectionTask>) => void;
+  getTasksForInspector: (inspectorId: string) => InspectionTask[];
+  getTaskById: (taskId: string) => InspectionTask | undefined;
+
   isFirebaseReady: boolean;
 }
 
@@ -60,6 +94,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [penaltyInvoices, setPenaltyInvoices] = useState<PenaltyInvoice[]>([]);
   const [globalPenaltyStatements, setGlobalPenaltyStatements] = useState<GlobalPenaltyStatement[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>(INITIAL_NOTIFICATIONS);
+
+  // Tasks (start empty; نقدر نضيف INITIAL_TASKS لاحقاً لو حبيت)
+  const [tasks, setTasks] = useState<InspectionTask[]>([]);
   
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   
@@ -92,11 +129,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setGlobalPenaltyStatements(loadedGPS);
     });
 
+    // Tasks listener (if you later decide to store tasks in Firestore)
+    const tasksUnsub = onSnapshot(collection(db, "tasks"), (snapshot) => {
+      const loadedTasks = snapshot.docs.map(doc => doc.data() as InspectionTask);
+      setTasks(loadedTasks);
+    });
+
     return () => {
       reportsUnsub();
       cdrsUnsub();
       invoicesUnsub();
       gpsUnsub();
+      tasksUnsub();
     };
   }, []);
 
@@ -109,7 +153,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (!auth) return;
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
         if (firebaseUser && firebaseUser.email) {
-            // Find user in USERS array to get Role (In production this would come from a 'users' collection in Firestore)
             const matchedUser = USERS.find(u => u.email.toLowerCase() === firebaseUser.email?.toLowerCase());
             if (matchedUser) {
                 setUser({ ...matchedUser, uid: firebaseUser.uid });
@@ -163,7 +206,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const submitReport = useCallback(async (report: InspectionReport) => {
     if (db) {
-        try { await setDoc(doc(db, "reports", report.id), report); } catch (e) { console.error(e); }
+        try {
+          await setDoc(doc(db, "reports", report.id), report);
+        } catch (e) {
+          console.error(e);
+        }
     } else {
         setReports(prev => [...prev, report]);
     }
@@ -171,7 +218,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const updateReport = useCallback(async (updatedReport: InspectionReport) => {
     if (db) {
-        try { await setDoc(doc(db, "reports", updatedReport.id), updatedReport); } catch (e) { console.error(e); }
+        try {
+          await setDoc(doc(db, "reports", updatedReport.id), updatedReport);
+        } catch (e) {
+          console.error(e);
+        }
     } else {
         setReports(prev => prev.map(r => r.id === updatedReport.id ? updatedReport : r));
     }
@@ -179,7 +230,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const addCDR = useCallback(async (cdr: CDR) => {
     if (db) {
-        try { await setDoc(doc(db, "cdrs", cdr.id), cdr); } catch (e) { console.error(e); }
+        try {
+          await setDoc(doc(db, "cdrs", cdr.id), cdr);
+        } catch (e) {
+          console.error(e);
+        }
     } else {
         setCdrs(prev => [cdr, ...prev]);
     }
@@ -187,7 +242,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const updateCDR = useCallback(async (updatedCDR: CDR) => {
     if (db) {
-        try { await setDoc(doc(db, "cdrs", updatedCDR.id), updatedCDR); } catch (e) { console.error(e); }
+        try {
+          await setDoc(doc(db, "cdrs", updatedCDR.id), updatedCDR);
+        } catch (e) {
+          console.error(e);
+        }
     } else {
         setCdrs(prev => prev.map(c => c.id === updatedCDR.id ? updatedCDR : c));
     }
@@ -195,7 +254,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const addPenaltyInvoice = useCallback(async (invoice: PenaltyInvoice) => {
     if (db) {
-        try { await setDoc(doc(db, "penaltyInvoices", invoice.id), invoice); } catch (e) { console.error(e); }
+        try {
+          await setDoc(doc(db, "penaltyInvoices", invoice.id), invoice);
+        } catch (e) {
+          console.error(e);
+        }
     } else {
         setPenaltyInvoices(prev => [invoice, ...prev]);
     }
@@ -203,7 +266,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const updatePenaltyInvoice = useCallback(async (invoice: PenaltyInvoice) => {
     if (db) {
-        try { await setDoc(doc(db, "penaltyInvoices", invoice.id), invoice); } catch (e) { console.error(e); }
+        try {
+          await setDoc(doc(db, "penaltyInvoices", invoice.id), invoice);
+        } catch (e) {
+          console.error(e);
+        }
     } else {
         setPenaltyInvoices(prev => prev.map(inv => inv.id === invoice.id ? invoice : inv));
     }
@@ -211,7 +278,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const addGlobalPenaltyStatement = useCallback(async (stmt: GlobalPenaltyStatement) => {
     if (db) {
-        try { await setDoc(doc(db, "globalPenaltyStatements", stmt.id), stmt); } catch (e) { console.error(e); }
+        try {
+          await setDoc(doc(db, "globalPenaltyStatements", stmt.id), stmt);
+        } catch (e) {
+          console.error(e);
+        }
     } else {
         setGlobalPenaltyStatements(prev => [stmt, ...prev]);
     }
@@ -219,11 +290,64 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const updateGlobalPenaltyStatement = useCallback(async (updatedStmt: GlobalPenaltyStatement) => {
     if (db) {
-        try { await setDoc(doc(db, "globalPenaltyStatements", updatedStmt.id), updatedStmt); } catch (e) { console.error(e); }
+        try {
+          await setDoc(doc(db, "globalPenaltyStatements", updatedStmt.id), updatedStmt);
+        } catch (e) {
+          console.error(e);
+        }
     } else {
         setGlobalPenaltyStatements(prev => prev.map(s => s.id === updatedStmt.id ? updatedStmt : s));
     }
   }, []);
+
+  // ==========================================================================
+  // TASK MANAGEMENT (HYBRID – Mock now, Firestore-ready)
+  // ==========================================================================
+
+  const createTask = useCallback((taskInput: Omit<InspectionTask, 'id' | 'createdAt'>): InspectionTask => {
+    const newTask: InspectionTask = {
+      ...taskInput,
+      id: `task-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      createdAt: new Date().toISOString(),
+    };
+
+    if (db) {
+      try {
+        // نستخدم نفس id في Firestore
+        setDoc(doc(db, "tasks", newTask.id), newTask);
+      } catch (e) {
+        console.error(e);
+      }
+    } else {
+      setTasks(prev => [...prev, newTask]);
+    }
+
+    return newTask;
+  }, []);
+
+  const updateTask = useCallback((taskId: string, partial: Partial<InspectionTask>) => {
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...partial } : t));
+
+    if (db) {
+      try {
+        const existing = tasks.find(t => t.id === taskId);
+        if (existing) {
+          const merged: InspectionTask = { ...existing, ...partial };
+          setDoc(doc(db, "tasks", taskId), merged);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }, [tasks]);
+
+  const getTasksForInspector = useCallback((inspectorId: string): InspectionTask[] => {
+    return tasks.filter(t => t.inspectorId === inspectorId);
+  }, [tasks]);
+
+  const getTaskById = useCallback((taskId: string): InspectionTask | undefined => {
+    return tasks.find(t => t.id === taskId);
+  }, [tasks]);
 
   // ==========================================================================
   // HELPERS (No DB dependency)
@@ -268,35 +392,4 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return location ? ZONES.find(z => z.id === location.zoneId) : undefined;
   }, []);
   const getFormById = useCallback((formId: string) => FORMS.find(f => f.id === formId), []);
-  const getCDRById = useCallback((id: string) => cdrs.find(c => c.id === id), [cdrs]);
-  const getPenaltyInvoiceById = useCallback((id: string) => penaltyInvoices.find(inv => inv.id === id), [penaltyInvoices]);
-  const getGlobalPenaltyStatementById = useCallback((id: string) => globalPenaltyStatements.find(s => s.id === id), [globalPenaltyStatements]);
-
-  // Notifications
-  const markNotificationAsRead = useCallback((id: string) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
-  }, []);
-
-  const markAllNotificationsAsRead = useCallback(() => {
-    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-  }, []);
-
-  const value = useMemo(() => ({
-    user, users, login, logout, addUser, updateUser, deleteUser, changePassword,
-    reports, submitReport, updateReport,
-    getReportById, getInspectorById, getLocationById, getZoneByLocationId, getFormById,
-    zones: ZONES, locations: LOCATIONS, forms: FORMS,
-    theme, toggleTheme,
-    notifications, markNotificationAsRead, markAllNotificationsAsRead,
-    cdrs, addCDR, updateCDR, getCDRById,
-    penaltyInvoices, addPenaltyInvoice, updatePenaltyInvoice, getPenaltyInvoiceById,
-    globalPenaltyStatements, addGlobalPenaltyStatement, updateGlobalPenaltyStatement, getGlobalPenaltyStatementById,
-    isFirebaseReady
-  }), [user, users, reports, theme, notifications, cdrs, penaltyInvoices, globalPenaltyStatements, isFirebaseReady, login, logout, addUser, updateUser, deleteUser, changePassword, submitReport, updateReport, getReportById, getInspectorById, getLocationById, getZoneByLocationId, getFormById, toggleTheme, markNotificationAsRead, markAllNotificationsAsRead, addCDR, updateCDR, getCDRById, addPenaltyInvoice, updatePenaltyInvoice, getPenaltyInvoiceById, addGlobalPenaltyStatement, updateGlobalPenaltyStatement, getGlobalPenaltyStatementById]);
-
-  return (
-    <AppContext.Provider value={value}>
-      {children}
-    </AppContext.Provider>
-  );
-};
+  const getCDRById = useCallback(
