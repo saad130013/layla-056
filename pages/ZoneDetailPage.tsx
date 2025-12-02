@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useI18n } from '../../hooks/useI18n';
+import { useI18n } from '../hooks/useI18n';
 import { AppContext } from '../context/AppContext';
 import { ArrowLeft } from 'lucide-react';
 
