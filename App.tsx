@@ -1,4 +1,3 @@
-
 import React, { useContext } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppContext } from './context/AppContext';
@@ -17,7 +16,7 @@ import CDRDetail from './pages/CDRDetail';
 import MyReportsPage from './pages/MyReportsPage';
 import InspectorAveragesPage from './pages/InspectorAveragesPage';
 import HeatmapPage from './pages/HeatmapPage';
-import PenaltyInvoicesPage from './pages/PenaltyInvoicesPage';
+import PenaltyInvoicesPage from './pages/PENALTYInvoicesPage';
 import PenaltyInvoiceDetail from './pages/PenaltyInvoiceDetail';
 import GlobalPenaltyStatementsList from './pages/GlobalPenaltyStatementsList';
 import GlobalPenaltyStatementDetail from './pages/GlobalPenaltyStatementDetail';
@@ -27,6 +26,11 @@ import InspectorFeedbackPage from './pages/InspectorFeedbackPage';
 import MyInspectionsListPage from './pages/MyInspectionsListPage';
 import ZoneDetailPage from './pages/ZoneDetailPage';
 import InspectorAnalyticsPage from './pages/InspectorAnalyticsPage';
+
+// 👇 الصفحات الجديدة لنظام المهام
+import MyTasksPage from './pages/MyTasksPage';
+import TaskSchedulingPage from './pages/TaskSchedulingPage';
+import TaskMonitoringPage from './pages/TaskMonitoringPage';
 
 const App: React.FC = () => {
   const { user, theme } = useContext(AppContext);
@@ -41,7 +45,7 @@ const App: React.FC = () => {
     }
   }, [theme]);
 
-  const PlaceholderPage: React.FC<{title: string}> = ({title}) => (
+  const PlaceholderPage: React.FC<{ title: string }> = ({ title }) => (
     <div className="flex items-center justify-center h-full">
       <h1 className="text-2xl text-gray-500">{title} Page - Coming Soon</h1>
     </div>
@@ -49,7 +53,11 @@ const App: React.FC = () => {
 
   return (
     <HashRouter>
-      <div className={`flex h-screen bg-brand-gray dark:bg-gray-900 text-gray-800 dark:text-gray-200 ${language === 'ar' ? 'font-[Tahoma]' : ''}`}>
+      <div
+        className={`flex h-screen bg-brand-gray dark:bg-gray-900 text-gray-800 dark:text-gray-200 ${
+          language === 'ar' ? 'font-[Tahoma]' : ''
+        }`}
+      >
         {user ? (
           <>
             <Sidebar />
@@ -59,28 +67,46 @@ const App: React.FC = () => {
                 <Routes>
                   <Route path="/" element={<Navigate to="/dashboard" />} />
                   <Route path="/dashboard" element={<Dashboard />} />
+
+                  {/* التفتيش */}
                   <Route path="/new-inspection" element={<NewInspection />} />
-                  <Route path="/reporting-hub" element={<ReportingHub />} />
                   <Route path="/report/:id" element={<ReportDetail />} />
-                  <Route path="/settings" element={<Settings />} />
-                  <Route path="/inspectors" element={<PlaceholderPage title="Inspectors" />} />
-                  <Route path="/standards" element={<PlaceholderPage title="Standards" />} />
+                  <Route path="/my-reports" element={<MyReportsPage />} />
+                  <Route path="/my-inspections-list" element={<MyInspectionsListPage />} />
+
+                  {/* لوحة التقارير والتحليلات */}
+                  <Route path="/reporting-hub" element={<ReportingHub />} />
+                  <Route path="/inspector-averages" element={<InspectorAveragesPage />} />
+                  <Route path="/heatmap" element={<HeatmapPage />} />
+                  <Route path="/zone-detail/:id" element={<ZoneDetailPage />} />
+                  <Route path="/inspector-analytics/:id" element={<InspectorAnalyticsPage />} />
+
+                  {/* التنبيهات و CDR */}
                   <Route path="/alerts" element={<AlertsPage />} />
                   <Route path="/cdr" element={<CDRList />} />
                   <Route path="/cdr/:id" element={<CDRDetail />} />
-                  <Route path="/my-reports" element={<MyReportsPage />} />
-                  <Route path="/my-inspections-list" element={<MyInspectionsListPage />} />
-                  <Route path="/inspector-averages" element={<InspectorAveragesPage />} />
-                  <Route path="/heatmap" element={<HeatmapPage />} />
+
+                  {/* الفواتير والجزاءات */}
                   <Route path="/penalty-invoices" element={<PenaltyInvoicesPage />} />
                   <Route path="/penalty-invoice/:id" element={<PenaltyInvoiceDetail />} />
                   <Route path="/global-penalty-statements" element={<GlobalPenaltyStatementsList />} />
                   <Route path="/global-penalty-statement/:id" element={<GlobalPenaltyStatementDetail />} />
+
+                  {/* العقد والقضايا الحرجة والتغذية الراجعة */}
                   <Route path="/contract-details" element={<ContractDetailsPage />} />
                   <Route path="/critical-issues" element={<CriticalIssuesPage />} />
                   <Route path="/inspector-feedback" element={<InspectorFeedbackPage />} />
-                  <Route path="/zone-detail/:id" element={<ZoneDetailPage />} />
-                  <Route path="/inspector-analytics/:id" element={<InspectorAnalyticsPage />} />
+
+                  {/* إعدادات عامة */}
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/inspectors" element={<PlaceholderPage title="Inspectors" />} />
+                  <Route path="/standards" element={<PlaceholderPage title="Standards" />} />
+
+                  {/* 👇 صفحات نظام المهام */}
+                  <Route path="/my-tasks" element={<MyTasksPage />} />
+                  <Route path="/task-scheduling" element={<TaskSchedulingPage />} />
+                  <Route path="/task-monitoring" element={<TaskMonitoringPage />} />
+
                   <Route path="*" element={<Navigate to="/dashboard" />} />
                 </Routes>
               </main>
