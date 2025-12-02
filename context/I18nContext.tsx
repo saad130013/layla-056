@@ -256,6 +256,18 @@ const translations: Translations = {
     feedbackComment: 'Feedback Comment',
     noFeedbackFound: 'No feedback found matching your criteria.',
     // Executive Dashboard
+        // Task Management
+    myTasks: 'My Tasks',
+    pendingTasks: 'Pending Tasks',
+    completedTasks: 'Completed Tasks',
+    noPendingTasks: 'No pending tasks assigned to you.',
+    noCompletedTasks: 'No tasks completed yet.',
+    startInspection: 'Start Inspection',
+    finishedAt: 'Finished at',
+    viewReport: 'View Report',
+    risk: 'Risk level',
+    notAuthorized: 'You are not authorized to view this page.',
+
     executiveDashboard: 'Executive Dashboard',
     riskOverview: 'Risk Overview',
     todaysVisits: 'Today\'s Visits',
@@ -596,6 +608,18 @@ const translations: Translations = {
     lastQuarter: 'آخر ربع سنوي',
     last6Months: 'آخر 6 أشهر',
     lastYear: 'آخر سنة',
+    // Task Management
+myTasks: 'مهامي',
+pendingTasks: 'مهام قيد التنفيذ',
+completedTasks: 'مهام منجزة',
+noPendingTasks: 'لا توجد مهام قيد التنفيذ مكلّف بها حالياً.',
+noCompletedTasks: 'لم تنهِ أي مهام حتى الآن.',
+startInspection: 'بدء التفتيش',
+finishedAt: 'تاريخ الإنهاء',
+viewReport: 'عرض التقرير',
+risk: 'مستوى الخطورة',
+notAuthorized: 'ليست لديك صلاحية لعرض هذه الصفحة.',
+
     // Penalty descriptions (Articles A, B, C, D)
     penalty_a1: 'عدم تنظيف المعدات يوميًا أو إصلاح معدات التنظيف بشكل صحيح وعدم اتباع إجراءات السلامة.',
     penalty_a2: 'التأخير في تقديم المراسلات والتقارير والمستندات المطلوبة.',
