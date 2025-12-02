@@ -14,206 +14,7 @@ export interface User {
   role: UserRole;
 }
 
-export enum RiskCategory {
-  High = 'High',
-  Medium = 'Medium',
-  Low = 'Low',
-}
-
-export interface Location {
-  id: string;
-  name: {
-    en: string;
-    ar: string;
-  };
-  zoneId: string;
-  formId: string;
-}
-
-export interface Zone {
-  id: string;
-  name: {
-    en: string;
-    ar: string;
-  };
-  riskCategory: RiskCategory;
-}
-
-export interface EvaluationItem {
-  id: string;
-  name: string; // This is now a translation key like 'hr_item_1'
-  maxScore: number;
-  predefinedDefects: string[];
-}
-
-export interface InspectionForm {
-  id:string;
-  name: {
-    en: string;
-    ar: string;
-  };
-  items: EvaluationItem[];
-}
-
-export interface InspectionResultItem {
-  itemId: string;
-  score: number;
-  comment: string;
-  defects: string[];
-  photos: string[];
-}
-
-export enum ReportStatus {
-    Draft = 'Draft',
-    Submitted = 'Submitted',
-    Reviewed = 'Reviewed',
-    NeedsAction = 'Needs Corrective Action',
-}
-
-
-export interface InspectionReport {
-  id: string;
-  referenceNumber: string;
-  inspectorId: string;
-  locationId: string;
-  date: string;
-  status: ReportStatus;
-  items: InspectionResultItem[];
-  supervisorComment?: string;
-  subLocations?: string[];
-  batchLocationIds?: string[];
-}
-
-export interface Language {
-  code: 'en' | 'ar';
-  name: string;
-}
-
-export interface Translations {
-  [key: string]: {
-    [key: string]: string;
-  };
-}
-
-export interface Notification {
-  id: string;
-  message: string;
-  type: 'alert' | 'info' | 'success';
-  timestamp: string;
-  isRead: boolean;
-  link?: string;
-}
-
-// CDR Types
-export enum CDRStatus {
-  Draft = 'Draft',
-  Submitted = 'Submitted to Manager',
-  Approved = 'Approved / Final',
-}
-
-export enum CDRIncidentType {
-  First = 'First Incident',
-  Repetitive = 'Repetitive',
-  Routine = 'Routine',
-  Investigation = 'Investigation',
-}
-
-export enum CDRServiceType {
-    Housekeeping = 'Housekeeping',
-    Laundry = 'Laundry',
-    PestControl = 'Pest Control',
-    HazardousWaste = 'Hazardous Material & Medical Waste',
-    Horticulture = 'Horticulture',
-}
-
-export enum CDRManagerDecision {
-    Penalty = 'Penalty',
-    Warning = 'Warning',
-    Attention = 'Attention',
-    NoValidCase = 'No Valid Case',
-}
-
-export interface CDR {
-  id: string;
-  referenceNumber: string;
-  employeeId: string;
-  date: string;
-  time: string;
-  locationId: string;
-  incidentType: CDRIncidentType;
-  inChargeName: string;
-  inChargeId: string;
-  inChargeEmail: string;
-  serviceTypes: CDRServiceType[];
-  manpowerDiscrepancy: string[];
-  materialDiscrepancy: string[];
-  equipmentDiscrepancy: string[];
-  onSpotAction: string[];
-  actionPlan: string[];
-  staffComment: string;
-  attachments: string[]; // For simplicity, we'll handle base64 strings
-  employeeSignature: string; // Typed name
-  status: CDRStatus;
-  managerDecision?: CDRManagerDecision;
-  managerComment?: string;
-  managerSignature?: string;
-  finalizedDate?: string;
-}
-
-// Penalty Invoice Types
-export interface PenaltyItem {
-  description: string;
-  category: string; // Manpower, Material, etc.
-  amount: number;
-}
-
-export enum PenaltyStatus {
-  Pending = 'Pending Approval',
-  Deducted = 'Approved Penalty Case',
-}
-
-export interface PenaltyInvoice {
-  id: string;
-  cdrId: string;
-  cdrReference: string;
-  dateGenerated: string;
-  locationName: string;
-  inspectorName: string;
-  items: PenaltyItem[];
-  totalAmount: number;
-  status: PenaltyStatus;
-  managerName?: string;
-  approvalDate?: string;
-  comments?: string;
-}
-
-// Global Penalty Statement Types
-export enum GlobalPenaltyStatus {
-  Draft = 'Draft',
-  Approved = 'Approved',
-}
-
-export enum GlobalPenaltyItemStatus {
-  Approved = 'Approved',
-  Rejected = 'Rejected',
-  Pending = 'Pending'
-}
-
-export interface GlobalPenaltyItem {
-  id: string; // unique id for the row
-  violationName: string;
-  category: string;
-  occurrenceCount: number;
-  penaltyPerOccurrence: number;
-  total: number;
-  status: GlobalPenaltyItemStatus;
-  managerNotes?: string;
-  linkedCdrIds?: string[]; // New: IDs of CDRs linked to this item
-  isManual?: boolean;      // New: Flag for manually added items
-}
-
-export interface GlobalPenaltyStatement {
-  id: string;
+...
   referenceNumber: string;
   month: number; // 0-11
   year: number;
@@ -227,4 +28,32 @@ export interface GlobalPenaltyStatement {
   totalViolations: number;
   totalInvoices?: number;
   managerGeneralComment?: string;
+}
+
+// ===== Task Management Types =====
+
+export enum TaskStatus {
+  Pending = 'PENDING',
+  InProgress = 'IN_PROGRESS',
+  Completed = 'COMPLETED',
+  Overdue = 'OVERDUE',
+}
+
+/**
+ * Represents a scheduled inspection task assigned to a specific inspector
+ * for a specific location/zone. This is the core type for the task
+ * management / smart scheduling module.
+ */
+export interface InspectionTask {
+  id: string;
+  inspectorId: string;       // The inspector responsible for this task (User.id)
+  locationId: string;        // Target location to be inspected
+  riskCategory: RiskCategory;
+  status: TaskStatus;
+  dueDate: string;           // ISO date string for when the inspection should be completed
+  createdAt: string;         // ISO date string for when the task was created
+  createdBy: string;         // User.id of the supervisor who created the task
+  notes?: string;            // Optional notes / instructions from supervisor
+  relatedReportId?: string;  // Filled once an InspectionReport is submitted for this task
+  relatedCdrId?: string;     // Filled once a CDR is created as a result of the inspection
 }
