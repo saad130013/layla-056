@@ -44,16 +44,19 @@ export enum TaskStatus {
  * for a specific location/zone. This is the core type for the task
  * management / smart scheduling module.
  */
-export interface InspectionTask {
+export interface InspectionReport {
   id: string;
-  inspectorId: string;       // The inspector responsible for this task (User.id)
-  locationId: string;        // Target location to be inspected
-  riskCategory: RiskCategory;
-  status: TaskStatus;
-  dueDate: string;           // ISO date string for when the inspection should be completed
-  createdAt: string;         // ISO date string for when the task was created
-  createdBy: string;         // User.id of the supervisor who created the task
-  notes?: string;            // Optional notes / instructions from supervisor
-  relatedReportId?: string;  // Filled once an InspectionReport is submitted for this task
-  relatedCdrId?: string;     // Filled once a CDR is created as a result of the inspection
+  referenceNumber: string;
+  inspectorId: string;
+  locationId: string;
+  date: string;
+  status: ReportStatus;
+  items: InspectionResultItem[];
+  supervisorComment?: string;
+  subLocations?: string[];
+  batchLocationIds?: string[];
+
+  // 🆕 رابط المهمة الأصلية (إن وجد)
+  originatingTaskId?: string;
 }
+
