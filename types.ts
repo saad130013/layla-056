@@ -58,5 +58,32 @@ export interface InspectionReport {
 
   // 🆕 رابط المهمة الأصلية (إن وجد)
   originatingTaskId?: string;
+  // ======================================================================
+// 🧩 Task Management Types
+// ======================================================================
+
+export enum TaskStatus {
+  Pending = 'PENDING',
+  InProgress = 'IN_PROGRESS',
+  Completed = 'COMPLETED',
+  Overdue = 'OVERDUE',
+}
+
+export interface InspectionTask {
+  id: string;
+  inspectorId: string;        // المفتش المكلّف
+  locationId: string;         // الموقع المستهدف
+  riskCategory: RiskCategory; // مستوى خطورة المنطقة
+  status: TaskStatus;         // حالة المهمة
+  createdAt: string;          // تاريخ إنشاء المهمة
+  dueDate?: string;           // تاريخ الاستحقاق (اختياري)
+  createdBy: string;          // من أنشأ المهمة (المشرف أو المدير الأعلى)
+  notes?: string;             // تعليمات للمفتش
+
+  // روابط بالتقرير والمخالفة الناتجة عن هذه المهمة
+  relatedReportId?: string;
+  relatedCdrId?: string;
+}
+
 }
 
